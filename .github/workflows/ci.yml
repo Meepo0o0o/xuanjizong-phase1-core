@@ -1,0 +1,170 @@
+name: Phase 1 Validate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase1-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: xjz
+          POSTGRES_PASSWORD: xjz
+          POSTGRES_DB: xjz_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U xjz -d xjz_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://xjz:xjz@localhost:5432/xjz_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Public repository boundary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          forbidden_path_patterns = [
+              re.compile(r"(^|/)candidate-(evidence|policy)", re.I),
+              re.compile(r"(^|/)compiled(/|$)", re.I),
+              re.compile(r"expected_state_", re.I),
+              re.compile(r"legacy_mapping", re.I),
+              re.compile(r"(^|/)environments\.ya?ml$", re.I),
+              re.compile(r"phase1-prod-desired-state", re.I),
+              re.compile(r"(^|/)(resume|cv)([._/-]|$)", re.I),
+          ]
+
+          email_re = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
+          private_key_re = re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")
+          spreadsheet_re = re.compile(r"\bspreadsheet_id\s*:\s*['\"]?([^\s'\"]+)", re.I)
+          project_id_re = re.compile(r"\bproject_id\s*:\s*['\"]?([^\s'\"]+)", re.I)
+          credential_url_re = re.compile(r"postgres(?:ql)?://([^:\s]+):([^@\s]+)@([^/\s]+)", re.I)
+          assignment_re = re.compile(
+              r"\b(api[_-]?key|service[_-]?role[_-]?key|secret|token|password)\b\s*[:=]\s*['\"]?([^\s'\",;]+)",
+              re.I,
+          )
+
+          failures = []
+          for path in Path(".").rglob("*"):
+              if not path.is_file() or ".git" in path.parts:
+                  continue
+              rel = path.as_posix()
+              if any(p.search(rel) for p in forbidden_path_patterns):
+                  failures.append(f"forbidden path: {rel}")
+                  continue
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  continue
+
+              if private_key_re.search(text):
+                  failures.append(f"private key material: {rel}")
+
+              for email in email_re.findall(text):
+                  if not email.lower().endswith(("@example.com", "@users.noreply.github.com")):
+                      failures.append(f"non-example email: {rel}")
+
+              for m in spreadsheet_re.finditer(text):
+                  value = m.group(1)
+                  if not ("<" in value or value.lower() in {"placeholder", "example"}):
+                      failures.append(f"private spreadsheet identifier: {rel}")
+
+              for m in project_id_re.finditer(text):
+                  value = m.group(1)
+                  if not ("<" in value or value.lower() in {"placeholder", "example"}):
+                      failures.append(f"environment project identifier: {rel}")
+
+              for m in credential_url_re.finditer(text):
+                  host = m.group(3).split(":")[0].lower()
+                  if host not in {"localhost", "127.0.0.1", "postgres"}:
+                      failures.append(f"credentialed remote database URL: {rel}")
+
+              for m in assignment_re.finditer(text):
+                  value = m.group(2)
+                  if len(value) >= 16 and not any(x in value.lower() for x in ("placeholder", "example", "changeme")):
+                      failures.append(f"possible credential assignment: {rel}")
+
+          if failures:
+              print("\n".join(sorted(set(failures))))
+              sys.exit(1)
+          print("public boundary check passed")
+          PY
+
+      - name: Build fresh PostgreSQL schema
+        run: |
+          for f in db/migrations/*.sql; do
+            echo "Applying $f"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      - name: Verify slim schema
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          do $$
+          declare
+            n integer;
+          begin
+            select count(*) into n
+            from information_schema.tables
+            where table_schema='public'
+              and table_name in (
+                'system_changes','change_impacts','execution_work_orders',
+                'execution_returns','pm_acceptance_reviews',
+                'engineering_governance_rules','project_changelog_entries',
+                'runtime_desired_state','runtime_actual_observations',
+                'runtime_deployment_generations','raw_import_records'
+              );
+            if n <> 0 then
+              raise exception 'retired objects remain in public schema: %', n;
+            end if;
+
+            if not exists (
+              select 1
+              from information_schema.columns
+              where table_schema='public'
+                and table_name='research_runs'
+                and column_name='runtime_version'
+            ) then
+              raise exception 'research_runs runtime identity columns missing';
+            end if;
+          end $$;
+          SQL
+
+      - name: Transactional smoke test
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/checks/002_transactional_smoke_test.sql
+
+      - name: Runtime persistence API smoke test
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/checks/004_runtime_persistence_api.sql
+
+      - name: Foundation readback gate
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/checks/005_foundation_readback.sql
+
+      - name: Security baseline gate
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/checks/006_security_baseline.sql
+
+      - name: Review-rigor SQL gates compile
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/checks/003_review_rigor_quality_gates.sql
+
+      - name: Cutover reconciliation SQL compiles
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/checks/001_cutover_reconciliation.sql
