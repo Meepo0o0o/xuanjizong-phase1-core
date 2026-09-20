@@ -59,6 +59,17 @@ begin
     raise exception 'FOUNDATION READBACK FAIL: retired control-plane objects returned to public';
   end if;
 
+
+  if not exists (
+    select 1
+    from information_schema.tables
+    where table_schema='private'
+      and table_name='runtime_environment_guard'
+      and table_type='BASE TABLE'
+  ) then
+    raise exception 'FOUNDATION READBACK FAIL: private runtime environment guard missing';
+  end if;
+
   if not exists (
     select 1 from information_schema.schemata where schema_name='archive'
   ) then

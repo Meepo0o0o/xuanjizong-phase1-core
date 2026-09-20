@@ -176,6 +176,14 @@ end
 $test$;
 
 
+insert into private.runtime_environment_guard(singleton, environment)
+select true, 'TEST'
+where not exists (
+  select 1
+  from private.runtime_environment_guard
+  where singleton = true
+);
+
 do $identity_v2_test$
 declare
   v_run1 uuid;
@@ -276,6 +284,20 @@ begin
   end;
   if not v_failed then
     raise exception 'RUNTIME IDENTITY V2 FAIL: scheduler-task drift was accepted';
+  end if;
+
+  v_failed := false;
+  begin
+    perform public.runtime_begin_run_v2(
+      'RUNTIME-IDENTITY-V2-ENV-MISMATCH','县衙','XIANYA',
+      'xianya-contract-v2','phase1-v0.2.0','xianya-prod-fixture-001',
+      'task-runtime-identity-fixture','fixture','ScheduledTasks','PROD',0,'{}'::jsonb
+    );
+  exception when others then
+    v_failed := true;
+  end;
+  if not v_failed then
+    raise exception 'RUNTIME IDENTITY V2 FAIL: TEST database accepted PROD runtime identity';
   end if;
 
   perform public.runtime_finish_run(
