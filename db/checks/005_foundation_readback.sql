@@ -27,10 +27,21 @@ begin
   select count(*) into n
   from information_schema.routines
   where routine_schema='public'
-    and routine_name in ('runtime_begin_run','runtime_finish_run','runtime_transition_opportunity');
+    and routine_name in ('runtime_begin_run','runtime_begin_run_v2','runtime_finish_run','runtime_transition_opportunity');
+
+  if n <> 4 then
+    raise exception 'FOUNDATION READBACK FAIL: shared runtime persistence API incomplete';
+  end if;
+
+
+  select count(*) into n
+  from information_schema.columns
+  where table_schema='public'
+    and table_name='research_runs'
+    and column_name in ('contract_version','release_version','deployment_id');
 
   if n <> 3 then
-    raise exception 'FOUNDATION READBACK FAIL: shared runtime persistence API incomplete';
+    raise exception 'FOUNDATION READBACK FAIL: explicit runtime identity columns missing';
   end if;
 
   select count(*) into n
