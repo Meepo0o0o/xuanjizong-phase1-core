@@ -177,7 +177,12 @@ $test$;
 
 
 insert into private.runtime_environment_guard(singleton, environment)
-values (true, 'TEST');
+select true, 'TEST'
+where not exists (
+  select 1
+  from private.runtime_environment_guard
+  where singleton = true
+);
 
 do $identity_v2_test$
 declare
