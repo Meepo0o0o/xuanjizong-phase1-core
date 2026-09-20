@@ -2,68 +2,70 @@
 
 Binding instructions for engineering agents working in the public Xuanjizong Phase 1 core repository.
 
-## Public boundary
+## Goal
 
-This repository is public engineering infrastructure. Do not commit private or user-specific runtime/business data.
+Build the smallest system that reliably supports the real Phase 1 workflow.
 
-Forbidden in this repository:
-- candidate/person-specific evidence or resumes;
-- real job/application records or private company-research snapshots;
-- compensation or personal targeting rules;
-- production/test account or project identifiers;
-- spreadsheet/file identifiers used by private runtime;
-- credentials, tokens, private keys, authenticated connection strings;
-- compiled production prompts that contain private business configuration.
+Prefer, in order:
 
-Private configuration and mutable business state belong outside this repository.
+platform-native capability -> existing system/subscription -> mature open source -> credible free tier -> custom code.
 
-## Working method
+Do not build infrastructure merely because it is possible. Add custom code only when a real, current requirement cannot be met cleanly by an existing solution.
 
-For non-trivial changes:
+## Privacy boundary
 
-inspect/research -> compare standard approaches -> choose the simplest sufficient path -> execute -> validate -> read back
+This repository is public. Keep all user-private, candidate-specific, real job/business, credential, environment-identifier, and private runtime data outside it.
 
-Use established platform/industry primitives before inventing custom infrastructure.
+A private repository that contains or may contain such data must remain private.
 
-## Cost and resource policy
+This repository may contain only reviewed, reusable public-safe engineering artifacts.
 
-- Prefer no-cost solutions when they satisfy the requirement.
-- Before proposing or provisioning a paid resource, first research built-in, existing-subscription, mature open-source, and credible free-tier alternatives.
-- Use a paid resource only when the no-cost alternatives are materially insufficient for the requirement, and do not incur new paid spend without explicit user approval.
-- Treat engineering complexity and maintenance burden as costs too: prefer the simplest sufficient standard solution over custom infrastructure.
+## Engineering method
 
-## Repository publication safety gate
+- Solve the current blocker, not hypothetical future problems.
+- When the existing stack can support the next real TEST run, stop preparing and run TEST.
+- Let real operation expose missing capability before adding infrastructure.
+- Do not create custom schedulers, control planes, governance layers, databases, workers, services, tables, or triggers unless a concrete requirement actually needs them.
+- Prefer simple integration and small glue code over framework building.
 
-Repository visibility changes are security-sensitive operations and must fail closed.
+## Platform responsibilities
 
-- Never recommend or perform Private -> Public on a repository that contains, has contained, or may contain candidate/person-specific data, private business records, environment identifiers, credentials, production snapshots, private prompts, or other non-public runtime assets.
-- A repository may become public only if it is a purpose-built public-safe repository or clean-room export.
-- Before any Public publication decision, verify the exact repository identity and inspect the exposure surface beyond the default branch, including current branches, commit history, pull requests, workflow artifacts/logs where relevant, and known secret/privacy risks.
-- If repository identity, history, or data classification is uncertain, stop and keep the repository private. Do not ask the user to make it public as a troubleshooting shortcut.
-- Do not treat branch-protection pricing or platform limitations as sufficient reason to expose private assets. Prefer architectural separation, another no-cost safe platform, or a different control.
-- Visibility changes require explicit user approval after the risk boundary is stated; engineering automation must not silently broaden visibility.
+- GitHub: source control and CI.
+- PostgreSQL/Supabase: canonical mutable runtime data, transactions, constraints, and only the minimum shared persistence functions needed by the workflow.
+- Scheduled Tasks: scheduling.
+- ChatGPT/Web: research and reasoning.
+
+Do not make one component imitate another component's job.
 
 ## Source control
 
-- Work on a branch.
-- Use a pull request for changes to main.
+- Work through branches and pull requests because `main` is protected.
 - Required CI must pass before merge.
-- Do not force-push main.
-- Do not claim deployment success from repository state alone.
+- Do not force-push `main`.
+- Remove temporary branches after they are no longer useful.
 
-## Database
+## TEST and PROD
 
-- PostgreSQL is the canonical mutable persistence technology for Phase 1.
-- Schema changes are versioned migrations.
-- Unattended mutations must be idempotent/replay-safe.
-- Workflow transitions should be atomic where practical.
-- A mutation is not successful until canonical readback confirms it.
-- Do not embed environment-specific identifiers or credentials in migrations.
+Use TEST for new engineering behavior first.
+
+Free, reversible TEST work that does not damage real business data may proceed without extra ceremony.
+
+PROD destructive changes, irreversible deletion, broad permission expansion, or major architecture changes require explicit user approval.
+
+## Cost
+
+Prefer adequate free solutions. Do not provision new paid resources without explicit user approval.
+
+Engineering complexity and maintenance burden are also costs.
 
 ## Validation
 
-Changes affecting schema or persistence must be tested against a fresh PostgreSQL database. Run the relevant migration, smoke, security, and contract gates on the current HEAD.
+Use the minimum validation needed to know the change works.
+
+Confirm the target when similar TEST/PROD or Private/Public resources could be confused. Read back important mutations. Do not turn ordinary engineering work into a security audit or repeated validation ritual.
 
 ## Done
 
-A change is done only when the intended repository outcome is implemented and verified. Runtime/production outcomes require separate runtime evidence.
+A change is done when the current requirement works and has enough evidence to trust it.
+
+Do not keep building after the current blocker is removed.
