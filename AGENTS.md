@@ -25,6 +25,13 @@ inspect/research -> compare standard approaches -> choose the simplest sufficien
 
 Use established platform/industry primitives before inventing custom infrastructure.
 
+## Cost and resource policy
+
+- Prefer no-cost solutions when they satisfy the requirement.
+- Before proposing or provisioning a paid resource, first research built-in, existing-subscription, mature open-source, and credible free-tier alternatives.
+- Use a paid resource only when the no-cost alternatives are materially insufficient for the requirement, and do not incur new paid spend without explicit user approval.
+- Treat engineering complexity and maintenance burden as costs too: prefer the simplest sufficient standard solution over custom infrastructure.
+
 ## Source control
 
 - Work on a branch.
