@@ -157,6 +157,9 @@ jobs:
       - name: Runtime persistence API smoke test
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/checks/004_runtime_persistence_api.sql
 
+      - name: Runtime stage commit API smoke test
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/checks/007_runtime_stage_commit_api.sql
+
       - name: Foundation readback gate
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/checks/005_foundation_readback.sql
 
