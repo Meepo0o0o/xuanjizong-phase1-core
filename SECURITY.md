@@ -1,25 +1,16 @@
 # Security and privacy boundary
 
-This public repository must remain free of private candidate data, production records, credentials, account identifiers, and environment-specific project IDs.
+The security rule for this public repository is simple: private information stays private.
 
-## Publication rule
+Do not commit:
+- user or candidate personal information;
+- real job/application or private business records;
+- credentials, tokens, keys, or authenticated connection strings;
+- real environment/project/account identifiers;
+- private runtime assets or compiled prompts containing private data.
 
-Private repositories containing user, candidate, business, environment, or runtime data must remain private.
+A repository that contains or may contain such information must remain Private.
 
-Do not convert such a repository to public in order to obtain branch-protection, CI, or other platform features. If public source control is needed, create a separate clean-room public repository that contains only reviewed public-safe engineering artifacts and has independent history.
+This public repository is only for reviewed, reusable, public-safe engineering artifacts.
 
-A Private -> Public change is permitted only after repository-wide exposure review confirms the exact repository is intentionally public-safe. Uncertainty means no publication.
-
-## Never commit
-
-- passwords, API keys, access tokens, service-role keys;
-- database connection strings containing credentials;
-- candidate resumes or personal evidence;
-- real application/job-state snapshots;
-- private spreadsheet/file IDs;
-- production/test project IDs;
-- compiled production prompts containing private business data.
-
-Use deployment secrets and the private runtime/database layer for those values.
-
-If private data is committed, stop publication and remediate history before making the affected repository public.
+Do not make a private repository public to obtain CI, branch protection, convenience, or other platform features.
