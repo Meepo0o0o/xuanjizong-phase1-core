@@ -32,6 +32,17 @@ Use established platform/industry primitives before inventing custom infrastruct
 - Use a paid resource only when the no-cost alternatives are materially insufficient for the requirement, and do not incur new paid spend without explicit user approval.
 - Treat engineering complexity and maintenance burden as costs too: prefer the simplest sufficient standard solution over custom infrastructure.
 
+## Repository publication safety gate
+
+Repository visibility changes are security-sensitive operations and must fail closed.
+
+- Never recommend or perform Private -> Public on a repository that contains, has contained, or may contain candidate/person-specific data, private business records, environment identifiers, credentials, production snapshots, private prompts, or other non-public runtime assets.
+- A repository may become public only if it is a purpose-built public-safe repository or clean-room export.
+- Before any Public publication decision, verify the exact repository identity and inspect the exposure surface beyond the default branch, including current branches, commit history, pull requests, workflow artifacts/logs where relevant, and known secret/privacy risks.
+- If repository identity, history, or data classification is uncertain, stop and keep the repository private. Do not ask the user to make it public as a troubleshooting shortcut.
+- Do not treat branch-protection pricing or platform limitations as sufficient reason to expose private assets. Prefer architectural separation, another no-cost safe platform, or a different control.
+- Visibility changes require explicit user approval after the risk boundary is stated; engineering automation must not silently broaden visibility.
+
 ## Source control
 
 - Work on a branch.
