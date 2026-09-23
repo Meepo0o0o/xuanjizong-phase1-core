@@ -1,4 +1,10 @@
-# xuanjizong-phase1-core
+# __NO_RUNTIME_AUTHORITY__ xuanjizong-phase1-core
+
+> **PUBLIC REUSABLE ENGINEERING ONLY — NOT A RUNTIME OR BUSINESS SOURCE OF TRUTH**
+>
+> Never use this repository to determine current 璇玑宗 Phase 1 runtime state, candidate facts, real opportunities, production configuration, or active release.
+>
+> Current private canonical authority: `Meepo0o0o/xuanjizong-phase1-v2-canonical` → `ACTIVE_RELEASE.yaml`.
 
 Public engineering layer for Xuanjizong Phase 1.
 
